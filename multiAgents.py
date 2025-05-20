@@ -273,7 +273,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
         return bestAction
     
-    
+
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)
@@ -286,8 +286,61 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         All ghosts should be modeled as choosing uniformly at random from their
         legal moves.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numAgents = gameState.getNumAgents()
+        evalFn = self.evaluationFunction
+        maxDepth = self.depth
+
+        def maxValue(state, depth):
+            if state.isWin() or state.isLose() or depth == maxDepth:
+                return evalFn(state)
+
+            v = -float('inf')
+            for action in state.getLegalActions(0):
+                if action == Directions.STOP:
+                    continue
+                nextState = state.generateSuccessor(0, action)
+                v = max(v, expValue(nextState, depth, 1))
+            return v
+
+        def expValue(state, depth, agentIndex):
+            if state.isWin() or state.isLose():
+                return evalFn(state)
+
+            v = 0
+            legalActions = state.getLegalActions(agentIndex)
+            if not legalActions:
+                return evalFn(state)
+
+            probability = 1.0 / len(legalActions)
+            for action in legalActions:
+                if action == Directions.STOP:
+                    continue
+                nextState = state.generateSuccessor(agentIndex, action)
+
+                if agentIndex == numAgents - 1:
+                    v += probability * maxValue(nextState, depth + 1)
+                else:
+                    v += probability * expValue(nextState, depth, agentIndex + 1)
+            return v
+
+        # Find the best action
+        legalActions = gameState.getLegalActions(0)
+        if not legalActions:
+            return Directions.STOP
+
+        bestAction = None
+        bestScore = -float('inf')
+
+        for action in legalActions:
+            if action == Directions.STOP:
+                continue
+            nextState = gameState.generateSuccessor(0, action)
+            score = expValue(nextState, 0, 1)
+            if score > bestScore:
+                bestScore = score
+                bestAction = action
+
+        return bestAction
 
 def betterEvaluationFunction(currentGameState: GameState):
     """

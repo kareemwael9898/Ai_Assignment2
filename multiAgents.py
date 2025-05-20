@@ -203,7 +203,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
         )
 
         return bestAction
-
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
@@ -213,9 +212,68 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numAgents = gameState.getNumAgents()
+        evalFn = self.evaluationFunction
+        maxDepth = self.depth
 
+        def maxValue(state, depth, alpha, beta):
+            if state.isWin() or state.isLose() or depth == maxDepth:
+                return evalFn(state)
+
+            v = -float('inf')
+            for action in state.getLegalActions(0):
+                if action == Directions.STOP:
+                    continue
+                nextState = state.generateSuccessor(0, action)
+                v = max(v, minValue(nextState, depth, 1, alpha, beta))
+                if v > beta:
+                    return v
+                alpha = max(alpha, v)
+            return v
+
+        def minValue(state, depth, agentIndex, alpha, beta):
+            if state.isWin() or state.isLose() or depth == maxDepth:
+                return evalFn(state)
+
+            v = float('inf')
+            for action in state.getLegalActions(agentIndex):
+                if action == Directions.STOP:
+                    continue
+                nextState = state.generateSuccessor(agentIndex, action)
+
+                if agentIndex == numAgents - 1:
+                    v = min(v, maxValue(nextState, depth + 1, alpha, beta))
+                else:
+                    v = min(v, minValue(nextState, depth, agentIndex + 1, alpha, beta))
+
+                if v < alpha:
+                    return v
+                beta = min(beta, v)
+            return v
+
+        # Find the best action
+        legalActions = gameState.getLegalActions(0)
+        if not legalActions:
+            return Directions.STOP
+
+        bestAction = None
+        bestScore = -float('inf')
+        alpha = -float('inf')
+        beta = float('inf')
+
+        for action in legalActions:
+            if action == Directions.STOP:
+                continue
+            nextState = gameState.generateSuccessor(0, action)
+            score = minValue(nextState, 0, 1, alpha, beta)
+            if score > bestScore:
+                bestScore = score
+                bestAction = action
+            alpha = max(alpha, bestScore)
+
+        return bestAction
+    
+    
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)

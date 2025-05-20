@@ -347,10 +347,60 @@ def betterEvaluationFunction(currentGameState: GameState):
     Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
     evaluation function (question 5).
 
-    DESCRIPTION: <write something here so we know what you did>
+    DESCRIPTION: This evaluation function considers the following:
+    - The current score of the game.
+    - The distance to the nearest food pellet (closer is better).
+    - The distance to the nearest ghost (farther is better unless the ghost is scared).
+    - The number of remaining food pellets (fewer is better).
+    - The number of remaining capsules (fewer is better).
+    - Encourages eating scared ghosts when possible.
+
+    The function combines these factors into a single score to guide Pacman's decisions.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Extract useful information from the current game state
+    pacmanPos = currentGameState.getPacmanPosition()
+    food = currentGameState.getFood()
+    ghostStates = currentGameState.getGhostStates()
+    capsules = currentGameState.getCapsules()
+    score = currentGameState.getScore()
+
+    # Initialize evaluation score with the current game score
+    evaluationScore = score
+
+    # Compute distances to all food pellets
+    foodList = food.asList()
+    if foodList:
+        minFoodDistance = min(manhattanDistance(pacmanPos, food) for food in foodList)
+        evaluationScore += 10.0 / (minFoodDistance + 1)  # Prefer closer food
+    else:
+        evaluationScore += 100  # No food left is excellent
+
+    # Evaluate ghost proximity
+    for ghost in ghostStates:
+        ghostPos = ghost.getPosition()
+        distance = manhattanDistance(pacmanPos, ghostPos)
+        if ghost.scaredTimer > 0:
+            # Encourage chasing scared ghosts
+            evaluationScore += 20.0 / (distance + 1)
+        else:
+            if distance < 2:
+                # Strongly penalize being too close to active ghosts
+                evaluationScore -= 100
+
+    # Encourage eating capsules
+    if capsules:
+        minCapsuleDistance = min(manhattanDistance(pacmanPos, capsule) for capsule in capsules)
+        evaluationScore += 50.0 / (minCapsuleDistance + 1)
+    else:
+        evaluationScore += 25  # No capsules left is good
+
+    # Penalize having more food left
+    evaluationScore -= 4 * len(foodList)
+
+    # Penalize having more capsules left
+    evaluationScore -= 10 * len(capsules)
+
+    return evaluationScore
 
 # Abbreviation
 better = betterEvaluationFunction

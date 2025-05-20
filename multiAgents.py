@@ -72,7 +72,6 @@ class ReflexAgent(Agent):
         # If there are capsules, prefer to eat them
         if capsules:
             minCapsuleDistance = min(manhattanDistance(newPos, capsule) for capsule in capsules)
-            print(minCapsuleDistance)
             score += 100.0 / (minCapsuleDistance + 1)
         else:
             score += 100
@@ -142,27 +141,68 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action from the current gameState using self.depth
         and self.evaluationFunction.
-
-        Here are some method calls that might be useful when implementing minimax.
-
-        gameState.getLegalActions(agentIndex):
-        Returns a list of legal actions for an agent
-        agentIndex=0 means Pacman, ghosts are >= 1
-
-        gameState.generateSuccessor(agentIndex, action):
-        Returns the successor game state after an agent takes an action
-
-        gameState.getNumAgents():
-        Returns the total number of agents in the game
-
-        gameState.isWin():
-        Returns whether or not the game state is a winning state
-
-        gameState.isLose():
-        Returns whether or not the game state is a losing state
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numAgents = gameState.getNumAgents()
+        evalFn = self.evaluationFunction
+        depthLimit = self.depth
+
+        def maxValue(state, depth, agentIndex):
+            # Base case: terminal state or depth limit
+            if state.isWin() or state.isLose() or depth == depthLimit:
+                return evalFn(state)
+
+            v = -float('inf')
+            legalActions = state.getLegalActions(agentIndex)
+            if not legalActions:
+                return evalFn(state)
+
+            for action in legalActions:
+                if action == Directions.STOP:
+                    continue
+                successor = state.generateSuccessor(agentIndex, action)
+                v = max(v, minValue(successor, depth, agentIndex + 1))
+            return v
+
+        def minValue(state, depth, agentIndex):
+            # Base case: terminal state or depth limit
+            if state.isWin() or state.isLose() or depth == depthLimit:
+                return evalFn(state)
+
+            v = float('inf')
+            legalActions = state.getLegalActions(agentIndex)
+            if not legalActions:
+                return evalFn(state)
+
+            for action in legalActions:
+                if action == Directions.STOP:
+                    continue
+                successor = state.generateSuccessor(agentIndex, action)
+
+                if agentIndex == numAgents - 1:
+                    # All agents have moved; increase depth
+                    v = min(v, maxValue(successor, depth + 1, 0))
+                else:
+                    v = min(v, minValue(successor, depth, agentIndex + 1))
+            return v
+
+        # Evaluate all legal actions for Pacman
+        legalActions = gameState.getLegalActions(0)
+        if not legalActions:
+            return Directions.STOP
+
+        # Remove STOP to avoid unnecessary moves
+        if Directions.STOP in legalActions:
+            legalActions.remove(Directions.STOP)
+
+        # Find best action using minimax
+        bestAction = max(
+            legalActions,
+            key=lambda action: minValue(
+                gameState.generateSuccessor(0, action), 0, 1
+            )
+        )
+
+        return bestAction
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
